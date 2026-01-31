@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Search, Building2, MapPin, Banknote, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ const statusStyles: Record<PropertyStatus, string> = {
 };
 
 export default function Properties() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
@@ -156,7 +157,8 @@ export default function Properties() {
             {filteredProperties.map((property) => (
               <div
                 key={property.id}
-                className="group overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg"
+                className="group cursor-pointer overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg"
+                onClick={() => navigate(`/imoveis/${property.id}`)}
               >
                 {/* Image */}
                 <div className="relative aspect-[16/10] overflow-hidden bg-muted">
@@ -204,21 +206,26 @@ export default function Properties() {
                     <AlertDialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => navigate(`/imoveis/${property.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Ver detalhes
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(property)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(property); }}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
                           <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                               <Trash2 className="mr-2 h-4 w-4" />
                               Excluir
                             </DropdownMenuItem>
