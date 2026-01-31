@@ -1,12 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, User, Plus, X } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { useState, useEffect } from "react";
+import { Save, Plus, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -14,23 +19,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROPERTY_TYPE_LABELS, REGIONS, ClientType, ClientStatus, PropertyType } from "@/types";
+import { useUpdateClient } from "@/hooks/useClients";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateClient } from "@/hooks/useClients";
-import { Badge } from "@/components/ui/badge";
+import { PROPERTY_TYPE_LABELS, REGIONS, ClientType, ClientStatus, PropertyType } from "@/types";
 import { cn } from "@/lib/utils";
 import { CurrencyInput } from "@/components/ui/currency-input";
 
-export default function NewClient() {
-  const navigate = useNavigate();
+interface ClientEditDialogProps {
+  client: {
+    id: string;
+    name: string;
+    phone: string;
+    type: string;
+    max_purchase_value: number | null;
+    desired_property_types: string[] | null;
+    regions_of_interest: string[] | null;
+    has_property_for_transfer: boolean;
+    status: string;
+    notes: string | null;
+  };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function ClientEditDialog({ client, open, onOpenChange }: ClientEditDialogProps) {
   const { toast } = useToast();
-  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
   const [customRegion, setCustomRegion] = useState("");
   
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    type: "" as ClientType | "",
+    type: "" as ClientType,
     max_purchase_value: null as number | null,
     desired_property_types: [] as PropertyType[],
     regions_of_interest: [] as string[],
@@ -39,10 +59,25 @@ export default function NewClient() {
     notes: "",
   });
 
+  useEffect(() => {
+    if (client && open) {
+      setFormData({
+        name: client.name,
+        phone: client.phone,
+        type: client.type as ClientType,
+        max_purchase_value: client.max_purchase_value,
+        desired_property_types: (client.desired_property_types || []) as PropertyType[],
+        regions_of_interest: client.regions_of_interest || [],
+        has_property_for_transfer: client.has_property_for_transfer,
+        status: client.status as ClientStatus,
+        notes: client.notes || "",
+      });
+    }
+  }, [client, open]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!formData.name || !formData.phone || !formData.type) {
       toast({
         title: "Campos obrigatórios",
@@ -53,28 +88,21 @@ export default function NewClient() {
     }
 
     try {
-      await createClient.mutateAsync({
-        name: formData.name,
-        phone: formData.phone,
-        type: formData.type as ClientType,
-        max_purchase_value: formData.max_purchase_value,
-        desired_property_types: formData.desired_property_types,
-        regions_of_interest: formData.regions_of_interest,
-        has_property_for_transfer: formData.has_property_for_transfer,
-        status: formData.status,
+      await updateClient.mutateAsync({
+        id: client.id,
+        ...formData,
         notes: formData.notes || null,
       });
 
       toast({
-        title: "Cliente cadastrado!",
-        description: "O cliente foi cadastrado com sucesso. Buscando matches...",
+        title: "Cliente atualizado!",
+        description: "As informações do cliente foram atualizadas com sucesso.",
       });
-      
-      navigate("/clientes");
-    } catch (error) {
+      onOpenChange(false);
+    } catch {
       toast({
         title: "Erro",
-        description: "Não foi possível cadastrar o cliente.",
+        description: "Não foi possível atualizar o cliente.",
         variant: "destructive",
       });
     }
@@ -90,7 +118,7 @@ export default function NewClient() {
   };
 
   const toggleRegion = (region: string) => {
-    if (region === "Outro") return; // Don't toggle "Outro"
+    if (region === "Outro") return; // Don't toggle "Outro", just show input
     setFormData((prev) => ({
       ...prev,
       regions_of_interest: prev.regions_of_interest.includes(region)
@@ -112,69 +140,55 @@ export default function NewClient() {
     setCustomRegion("");
   };
 
-  const removeCustomRegion = (region: string) => {
+  const removeRegion = (region: string) => {
     setFormData((prev) => ({
       ...prev,
       regions_of_interest: prev.regions_of_interest.filter((r) => r !== region),
     }));
   };
 
+  const isBuyer = formData.type === "comprador" || formData.type === "comprador_vendedor";
+
   // Separate predefined regions from custom ones
   const predefinedRegions = REGIONS.filter(r => r !== "Outro");
   const customRegions = formData.regions_of_interest.filter(r => !predefinedRegions.includes(r));
-  const isBuyer = formData.type === "comprador" || formData.type === "comprador_vendedor";
 
   return (
-    <AppLayout title="Novo Cliente" subtitle="Cadastre um novo cliente">
-      <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-8">
-        {/* Back Button */}
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Button>
-
-        {/* Basic Info */}
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <User className="h-5 w-5 text-primary" />
-            Informações Básicas
-          </h2>
-          
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo *</Label>
-              <Input
-                id="name"
-                placeholder="Nome do cliente"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Cliente</DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <h3 className="font-semibold">Informações Básicas</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone / WhatsApp *</Label>
+                <Label htmlFor="edit-name">Nome Completo *</Label>
                 <Input
-                  id="phone"
-                  placeholder="(41) 99999-9999"
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Telefone *</Label>
+                <Input
+                  id="edit-phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="type">Tipo de Cliente *</Label>
+                <Label htmlFor="edit-type">Tipo de Cliente *</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value as ClientType })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="comprador">Comprador</SelectItem>
@@ -183,45 +197,42 @@ export default function NewClient() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as ClientStatus })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="negociacao">Em Negociação</SelectItem>
-                  <SelectItem value="fechado">Fechado</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value as ClientStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="negociacao">Em Negociação</SelectItem>
+                    <SelectItem value="fechado">Fechado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Buyer Preferences */}
-        {isBuyer && (
-          <div className="animate-slide-in rounded-xl border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Preferências de Compra</h2>
-            
-            <div className="space-y-6">
+          {/* Buyer Preferences */}
+          {isBuyer && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Preferências de Compra</h3>
+              
               <div className="space-y-2">
-                <Label htmlFor="max_purchase_value">Valor Máximo para Compra</Label>
+                <Label htmlFor="edit-max-value">Valor Máximo</Label>
                 <CurrencyInput
-                  id="max_purchase_value"
+                  id="edit-max-value"
                   value={formData.max_purchase_value}
                   onChange={(value) => setFormData({ ...formData, max_purchase_value: value })}
                   className="max-w-xs"
                 />
               </div>
 
-              <div className="space-y-3">
-                <Label>Tipos de Imóvel Desejados</Label>
+              <div className="space-y-2">
+                <Label>Tipos de Imóvel</Label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
                     <Badge
@@ -241,7 +252,7 @@ export default function NewClient() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label>Regiões de Interesse</Label>
                 <div className="flex flex-wrap gap-2">
                   {predefinedRegions.map((region) => (
@@ -273,7 +284,7 @@ export default function NewClient() {
                         {region}
                         <button
                           type="button"
-                          onClick={() => removeCustomRegion(region)}
+                          onClick={() => removeRegion(region)}
                           className="ml-1 hover:text-destructive"
                         >
                           <X className="h-3 w-3" />
@@ -303,51 +314,43 @@ export default function NewClient() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Seller Info */}
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold">Informações de Venda</h2>
-          
+          {/* Transfer Property */}
           <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-4">
             <div>
               <p className="font-medium">Possui imóvel para repasse?</p>
-              <p className="text-sm text-muted-foreground">
-                Marque se o cliente tem um imóvel para vender
-              </p>
+              <p className="text-sm text-muted-foreground">Marque se o cliente tem um imóvel para vender</p>
             </div>
             <Switch
               checked={formData.has_property_for_transfer}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, has_property_for_transfer: checked })
-              }
+              onCheckedChange={(checked) => setFormData({ ...formData, has_property_for_transfer: checked })}
             />
           </div>
-        </div>
 
-        {/* Notes */}
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold">Observações</h2>
-          <Textarea
-            placeholder="Informações adicionais sobre o cliente..."
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={4}
-          />
-        </div>
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-notes">Observações</Label>
+            <Textarea
+              id="edit-notes"
+              value={formData.notes || ""}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+            />
+          </div>
 
-        {/* Submit */}
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-            Cancelar
-          </Button>
-          <Button type="submit" className="gap-2" disabled={createClient.isPending}>
-            <Save className="h-4 w-4" />
-            {createClient.isPending ? "Salvando..." : "Cadastrar Cliente"}
-          </Button>
-        </div>
-      </form>
-    </AppLayout>
+          {/* Submit */}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="gap-2" disabled={updateClient.isPending}>
+              <Save className="h-4 w-4" />
+              {updateClient.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

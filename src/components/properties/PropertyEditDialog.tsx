@@ -57,9 +57,9 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
     city: "Curitiba",
     state: "PR",
     region: "",
-    transfer_value: "",
-    monthly_payment: "",
-    outstanding_balance: "",
+    transfer_value: null as number | null,
+    monthly_payment: null as number | null,
+    outstanding_balance: null as number | null,
     bank_constructor: "",
     owner_name: "",
     owner_phone: "",
@@ -79,9 +79,9 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         city: property.city,
         state: property.state,
         region: property.region,
-        transfer_value: String(property.transfer_value),
-        monthly_payment: property.monthly_payment ? String(property.monthly_payment) : "",
-        outstanding_balance: property.outstanding_balance ? String(property.outstanding_balance) : "",
+        transfer_value: property.transfer_value,
+        monthly_payment: property.monthly_payment,
+        outstanding_balance: property.outstanding_balance,
         bank_constructor: property.bank_constructor || "",
         owner_name: property.owner_name || "",
         owner_phone: property.owner_phone || "",
@@ -123,9 +123,9 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         city: formData.city,
         state: formData.state,
         region: formData.region,
-        transfer_value: parseFloat(formData.transfer_value),
-        monthly_payment: formData.monthly_payment ? parseFloat(formData.monthly_payment) : null,
-        outstanding_balance: formData.outstanding_balance ? parseFloat(formData.outstanding_balance) : null,
+        transfer_value: formData.transfer_value || 0,
+        monthly_payment: formData.monthly_payment,
+        outstanding_balance: formData.outstanding_balance,
         bank_constructor: formData.bank_constructor || null,
         owner_name: formData.owner_name || null,
         owner_phone: formData.owner_phone || null,
@@ -285,44 +285,32 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="edit-transfer_value">Valor do Repasse *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <CurrencyInput
-                      id="edit-transfer_value"
-                      placeholder="160.000,00"
-                      className="pl-10"
-                      value={formData.transfer_value}
-                      onValueChange={(value) => setFormData({ ...formData, transfer_value: value })}
-                    />
-                  </div>
+                  <CurrencyInput
+                    id="edit-transfer_value"
+                    value={formData.transfer_value}
+                    onChange={(value) => setFormData({ ...formData, transfer_value: value })}
+                    className="max-w-full"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-monthly_payment">Parcela</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <CurrencyInput
-                      id="edit-monthly_payment"
-                      placeholder="850,00"
-                      className="pl-10"
-                      value={formData.monthly_payment}
-                      onValueChange={(value) => setFormData({ ...formData, monthly_payment: value })}
-                    />
-                  </div>
+                  <CurrencyInput
+                    id="edit-monthly_payment"
+                    value={formData.monthly_payment}
+                    onChange={(value) => setFormData({ ...formData, monthly_payment: value })}
+                    className="max-w-full"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-outstanding_balance">Saldo Devedor</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <CurrencyInput
-                      id="edit-outstanding_balance"
-                      placeholder="180.000,00"
-                      className="pl-10"
-                      value={formData.outstanding_balance}
-                      onValueChange={(value) => setFormData({ ...formData, outstanding_balance: value })}
-                    />
-                  </div>
+                  <CurrencyInput
+                    id="edit-outstanding_balance"
+                    value={formData.outstanding_balance}
+                    onChange={(value) => setFormData({ ...formData, outstanding_balance: value })}
+                    className="max-w-full"
+                  />
                 </div>
               </div>
 

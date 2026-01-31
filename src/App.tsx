@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Properties from "./pages/Properties";
 import PropertyDetails from "./pages/PropertyDetails";
 import Clients from "./pages/Clients";
+import ClientDetails from "./pages/ClientDetails";
 import Matches from "./pages/Matches";
 import NewProperty from "./pages/NewProperty";
 import NewClient from "./pages/NewClient";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/imoveis/:id" element={<ProtectedRoute><PropertyDetails /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
             <Route path="/clientes/novo" element={<ProtectedRoute><NewClient /></ProtectedRoute>} />
+            <Route path="/clientes/:id" element={<ProtectedRoute><ClientDetails /></ProtectedRoute>} />
             <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
