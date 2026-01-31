@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Building2, X, Upload } from "lucide-react";
+import { Save, Building2, X, Upload, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateProperty } from "@/hooks/useProperties";
@@ -67,6 +68,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
   });
 
   const [photos, setPhotos] = useState<string[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number>(0);
 
   useEffect(() => {
     if (property) {
@@ -87,6 +89,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         notes: property.notes || "",
       });
       setPhotos(property.photos || []);
+      setCoverIndex(0);
     }
   }, [property]);
 
@@ -105,6 +108,13 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
     }
 
     try {
+      // Reorganiza as fotos para que a capa seja a primeira
+      const reorderedPhotos = [...photos];
+      if (coverIndex > 0 && coverIndex < photos.length) {
+        const [coverPhoto] = reorderedPhotos.splice(coverIndex, 1);
+        reorderedPhotos.unshift(coverPhoto);
+      }
+
       await updateProperty.mutateAsync({
         id: property.id,
         type: formData.type as PropertyType,
@@ -121,7 +131,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         owner_phone: formData.owner_phone || null,
         status: formData.status,
         notes: formData.notes || null,
-        photos: photos,
+        photos: reorderedPhotos,
       });
 
       toast({
@@ -149,6 +159,15 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
 
   const removePhoto = (index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+    if (index === coverIndex) {
+      setCoverIndex(0);
+    } else if (index < coverIndex) {
+      setCoverIndex((prev) => prev - 1);
+    }
+  };
+
+  const setCover = (index: number) => {
+    setCoverIndex(index);
   };
 
   return (
@@ -268,13 +287,12 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
                   <Label htmlFor="edit-transfer_value">Valor do Repasse *</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <Input
+                    <CurrencyInput
                       id="edit-transfer_value"
-                      type="number"
-                      placeholder="25000"
+                      placeholder="160.000,00"
                       className="pl-10"
                       value={formData.transfer_value}
-                      onChange={(e) => setFormData({ ...formData, transfer_value: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, transfer_value: value })}
                     />
                   </div>
                 </div>
@@ -283,13 +301,12 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
                   <Label htmlFor="edit-monthly_payment">Parcela</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <Input
+                    <CurrencyInput
                       id="edit-monthly_payment"
-                      type="number"
-                      placeholder="850"
+                      placeholder="850,00"
                       className="pl-10"
                       value={formData.monthly_payment}
-                      onChange={(e) => setFormData({ ...formData, monthly_payment: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, monthly_payment: value })}
                     />
                   </div>
                 </div>
@@ -298,13 +315,12 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
                   <Label htmlFor="edit-outstanding_balance">Saldo Devedor</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <Input
+                    <CurrencyInput
                       id="edit-outstanding_balance"
-                      type="number"
-                      placeholder="180000"
+                      placeholder="180.000,00"
                       className="pl-10"
                       value={formData.outstanding_balance}
-                      onChange={(e) => setFormData({ ...formData, outstanding_balance: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, outstanding_balance: value })}
                     />
                   </div>
                 </div>
@@ -361,12 +377,45 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
 
             {/* Photos */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">Fotos</h3>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Fotos</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Clique na estrela para definir a foto de capa
+                </p>
+              </div>
               
               <div className="grid grid-cols-4 gap-2">
                 {photos.map((photo, index) => (
-                  <div key={index} className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                  <div 
+                    key={index} 
+                    className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-muted ${
+                      index === coverIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                    }`}
+                  >
                     <img src={photo} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                    
+                    {/* Cover badge */}
+                    {index === coverIndex && (
+                      <div className="absolute left-1 top-1 rounded bg-primary px-1 py-0.5 text-[10px] font-medium text-primary-foreground">
+                        Capa
+                      </div>
+                    )}
+                    
+                    {/* Set as cover button */}
+                    <button
+                      type="button"
+                      onClick={() => setCover(index)}
+                      className={`absolute left-1 ${index === coverIndex ? "top-6" : "top-1"} rounded-full p-0.5 transition-colors ${
+                        index === coverIndex 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-card/80 text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                      }`}
+                      title="Definir como capa"
+                    >
+                      <Star className={`h-3 w-3 ${index === coverIndex ? "fill-current" : ""}`} />
+                    </button>
+                    
+                    {/* Remove button */}
                     <button
                       type="button"
                       onClick={() => removePhoto(index)}

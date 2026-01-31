@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Upload, X, Building2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, Building2, Star } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateProperty } from "@/hooks/useProperties";
@@ -41,6 +42,7 @@ export default function NewProperty() {
   });
 
   const [photos, setPhotos] = useState<string[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +58,13 @@ export default function NewProperty() {
     }
 
     try {
+      // Reorganiza as fotos para que a capa seja a primeira
+      const reorderedPhotos = [...photos];
+      if (coverIndex > 0 && coverIndex < photos.length) {
+        const [coverPhoto] = reorderedPhotos.splice(coverIndex, 1);
+        reorderedPhotos.unshift(coverPhoto);
+      }
+
       await createProperty.mutateAsync({
         type: formData.type as PropertyType,
         street: formData.street,
@@ -71,7 +80,7 @@ export default function NewProperty() {
         owner_phone: formData.owner_phone || null,
         status: formData.status,
         notes: formData.notes || null,
-        photos: photos,
+        photos: reorderedPhotos,
       });
 
       toast({
@@ -99,6 +108,16 @@ export default function NewProperty() {
 
   const removePhoto = (index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+    // Ajusta o índice da capa se necessário
+    if (index === coverIndex) {
+      setCoverIndex(0);
+    } else if (index < coverIndex) {
+      setCoverIndex((prev) => prev - 1);
+    }
+  };
+
+  const setCover = (index: number) => {
+    setCoverIndex(index);
   };
 
   return (
@@ -229,13 +248,12 @@ export default function NewProperty() {
               <Label htmlFor="transfer_value">Valor do Repasse (Ato) *</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input
+                <CurrencyInput
                   id="transfer_value"
-                  type="number"
-                  placeholder="25000"
+                  placeholder="160.000,00"
                   className="pl-10"
                   value={formData.transfer_value}
-                  onChange={(e) => setFormData({ ...formData, transfer_value: e.target.value })}
+                  onValueChange={(value) => setFormData({ ...formData, transfer_value: value })}
                 />
               </div>
             </div>
@@ -244,13 +262,12 @@ export default function NewProperty() {
               <Label htmlFor="monthly_payment">Valor da Parcela</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input
+                <CurrencyInput
                   id="monthly_payment"
-                  type="number"
-                  placeholder="850"
+                  placeholder="850,00"
                   className="pl-10"
                   value={formData.monthly_payment}
-                  onChange={(e) => setFormData({ ...formData, monthly_payment: e.target.value })}
+                  onValueChange={(value) => setFormData({ ...formData, monthly_payment: value })}
                 />
               </div>
             </div>
@@ -259,13 +276,12 @@ export default function NewProperty() {
               <Label htmlFor="outstanding_balance">Saldo Devedor</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input
+                <CurrencyInput
                   id="outstanding_balance"
-                  type="number"
-                  placeholder="180000"
+                  placeholder="180.000,00"
                   className="pl-10"
                   value={formData.outstanding_balance}
-                  onChange={(e) => setFormData({ ...formData, outstanding_balance: e.target.value })}
+                  onValueChange={(value) => setFormData({ ...formData, outstanding_balance: value })}
                 />
               </div>
             </div>
@@ -323,11 +339,42 @@ export default function NewProperty() {
         {/* Photos */}
         <div className="rounded-xl border bg-card p-6">
           <h2 className="mb-4 text-lg font-semibold">Fotos</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Clique na estrela para definir a foto de capa
+          </p>
           
           <div className="grid gap-4 sm:grid-cols-4">
             {photos.map((photo, index) => (
-              <div key={index} className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
+              <div 
+                key={index} 
+                className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-muted ${
+                  index === coverIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                }`}
+              >
                 <img src={photo} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                
+                {/* Cover badge */}
+                {index === coverIndex && (
+                  <div className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
+                    Capa
+                  </div>
+                )}
+                
+                {/* Set as cover button */}
+                <button
+                  type="button"
+                  onClick={() => setCover(index)}
+                  className={`absolute left-1 ${index === coverIndex ? "top-7" : "top-1"} rounded-full p-1 transition-colors ${
+                    index === coverIndex 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-card/80 text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                  }`}
+                  title="Definir como capa"
+                >
+                  <Star className={`h-3.5 w-3.5 ${index === coverIndex ? "fill-current" : ""}`} />
+                </button>
+                
+                {/* Remove button */}
                 <button
                   type="button"
                   onClick={() => removePhoto(index)}

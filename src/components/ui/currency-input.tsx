@@ -1,0 +1,107 @@
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+interface CurrencyInputProps extends Omit<React.ComponentProps<"input">, "onChange" | "value"> {
+  value: string;
+  onValueChange: (value: string) => void;
+}
+
+// Formata o valor para exibição (160000 -> 160.000,00)
+export function formatCurrencyDisplay(value: number | string): string {
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "";
+  
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numValue);
+}
+
+// Converte o valor formatado para número (160.000,00 -> 160000)
+export function parseCurrencyValue(formattedValue: string): string {
+  // Remove tudo exceto números e vírgula
+  const cleanValue = formattedValue.replace(/[^\d,]/g, "");
+  // Troca vírgula por ponto para armazenar
+  const numericValue = cleanValue.replace(",", ".");
+  return numericValue;
+}
+
+const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
+  ({ className, value, onValueChange, ...props }, ref) => {
+    const [displayValue, setDisplayValue] = React.useState("");
+
+    // Sincroniza o displayValue quando o value externo muda
+    React.useEffect(() => {
+      if (value) {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+          setDisplayValue(formatCurrencyDisplay(numValue));
+        }
+      } else {
+        setDisplayValue("");
+      }
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let inputValue = e.target.value;
+      
+      // Remove caracteres não numéricos exceto vírgula
+      inputValue = inputValue.replace(/[^\d,]/g, "");
+      
+      // Garante apenas uma vírgula
+      const parts = inputValue.split(",");
+      if (parts.length > 2) {
+        inputValue = parts[0] + "," + parts.slice(1).join("");
+      }
+      
+      // Limita decimais a 2 dígitos
+      if (parts.length === 2 && parts[1].length > 2) {
+        inputValue = parts[0] + "," + parts[1].substring(0, 2);
+      }
+      
+      // Formata com separador de milhares
+      if (inputValue) {
+        const [integerPart, decimalPart] = inputValue.split(",");
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        inputValue = decimalPart !== undefined 
+          ? `${formattedInteger},${decimalPart}` 
+          : formattedInteger;
+      }
+      
+      setDisplayValue(inputValue);
+      
+      // Converte para valor numérico para armazenar
+      const numericValue = parseCurrencyValue(inputValue);
+      onValueChange(numericValue);
+    };
+
+    const handleBlur = () => {
+      // Ao sair do campo, formata completamente
+      if (value) {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+          setDisplayValue(formatCurrencyDisplay(numValue));
+        }
+      }
+    };
+
+    return (
+      <input
+        type="text"
+        inputMode="decimal"
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className,
+        )}
+        ref={ref}
+        value={displayValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        {...props}
+      />
+    );
+  },
+);
+CurrencyInput.displayName = "CurrencyInput";
+
+export { CurrencyInput };
