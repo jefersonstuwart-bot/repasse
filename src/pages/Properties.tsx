@@ -30,9 +30,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, REGIONS, PropertyStatus } from "@/types";
 import { useProperties, useDeleteProperty } from "@/hooks/useProperties";
 import { useToast } from "@/hooks/use-toast";
+import { PropertyEditDialog } from "@/components/properties/PropertyEditDialog";
 
 const statusStyles: Record<PropertyStatus, string> = {
   disponivel: "status-available",
@@ -44,10 +46,17 @@ export default function Properties() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [editingProperty, setEditingProperty] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const { data: properties, isLoading } = useProperties();
   const deleteProperty = useDeleteProperty();
   const { toast } = useToast();
+
+  const handleEdit = (property: any) => {
+    setEditingProperty(property);
+    setEditDialogOpen(true);
+  };
 
   const filteredProperties = (properties ?? []).filter((property) => {
     const matchesSearch =
@@ -114,12 +123,14 @@ export default function Properties() {
                 <SelectValue placeholder="Região" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas regiões</SelectItem>
-                {REGIONS.map((region) => (
-                  <SelectItem key={region} value={region}>
-                    {region}
-                  </SelectItem>
-                ))}
+                <ScrollArea className="h-60">
+                  <SelectItem value="all">Todas regiões</SelectItem>
+                  {REGIONS.map((region) => (
+                    <SelectItem key={region} value={region}>
+                      {region}
+                    </SelectItem>
+                  ))}
+                </ScrollArea>
               </SelectContent>
             </Select>
           </div>
@@ -193,7 +204,7 @@ export default function Properties() {
                             <Eye className="mr-2 h-4 w-4" />
                             Ver detalhes
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(property)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
@@ -267,6 +278,12 @@ export default function Properties() {
             </Link>
           </div>
         )}
+
+        <PropertyEditDialog 
+          property={editingProperty} 
+          open={editDialogOpen} 
+          onOpenChange={setEditDialogOpen} 
+        />
       </div>
     </AppLayout>
   );

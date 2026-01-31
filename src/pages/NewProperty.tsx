@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROPERTY_TYPE_LABELS, REGIONS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateProperty } from "@/hooks/useProperties";
 
@@ -188,21 +189,12 @@ export default function NewProperty() {
 
               <div className="space-y-2">
                 <Label htmlFor="region">Região *</Label>
-                <Select
+                <Input
+                  id="region"
+                  placeholder="Ex: CIC, Tatuquara, Sítio Cercado..."
                   value={formData.region}
-                  onValueChange={(value) => setFormData({ ...formData, region: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a região" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REGIONS.map((region) => (
-                      <SelectItem key={region} value={region}>
-                        {region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                />
               </div>
             </div>
 
@@ -289,11 +281,13 @@ export default function NewProperty() {
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {BANKS_CONSTRUCTORS.map((bank) => (
-                  <SelectItem key={bank} value={bank}>
-                    {bank}
-                  </SelectItem>
-                ))}
+                <ScrollArea className="h-48">
+                  {BANKS_CONSTRUCTORS.map((bank) => (
+                    <SelectItem key={bank} value={bank}>
+                      {bank}
+                    </SelectItem>
+                  ))}
+                </ScrollArea>
               </SelectContent>
             </Select>
           </div>
