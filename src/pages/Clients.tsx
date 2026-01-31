@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Search, Users, Phone, MapPin, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ const typeStyles = {
 };
 
 export default function Clients() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -119,7 +120,7 @@ export default function Clients() {
         ) : (
           <div className="space-y-3">
             {filteredClients.map((client) => (
-              <div key={client.id} className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all duration-200 hover:shadow-md">
+              <div key={client.id} className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all duration-200 hover:shadow-md cursor-pointer" onClick={() => navigate(`/clientes/${client.id}`)}>
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
                   {client.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                 </div>
@@ -143,14 +144,14 @@ export default function Clients() {
                 </div>
                 <AlertDialog>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="shrink-0" onClick={(e) => e.stopPropagation()}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Ver detalhes</DropdownMenuItem>
-                      <DropdownMenuItem><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-                      <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem></AlertDialogTrigger>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${client.id}`); }}><Eye className="mr-2 h-4 w-4" />Ver detalhes</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => e.stopPropagation()}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                      <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem></AlertDialogTrigger>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <AlertDialogContent>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir este cliente?</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(client.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
                   </AlertDialogContent>
