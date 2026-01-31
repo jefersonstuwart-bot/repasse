@@ -72,7 +72,8 @@ export default function Properties() {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
@@ -159,9 +160,17 @@ export default function Properties() {
               >
                 {/* Image */}
                 <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-                    <Building2 className="h-12 w-12 text-primary/30" />
-                  </div>
+                  {property.photos && property.photos.length > 0 ? (
+                    <img 
+                      src={property.photos[0]} 
+                      alt={property.street}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <Building2 className="h-12 w-12 text-primary/30" />
+                    </div>
+                  )}
                   <div className="absolute left-3 top-3">
                     <span className={statusStyles[property.status as PropertyStatus]}>
                       {PROPERTY_STATUS_LABELS[property.status as PropertyStatus]}
