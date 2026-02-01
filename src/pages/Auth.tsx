@@ -50,7 +50,7 @@ export default function Auth() {
         description: "Bem-vindo de volta ao RepCRM.",
       });
       
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       toast({
         title: "Erro",

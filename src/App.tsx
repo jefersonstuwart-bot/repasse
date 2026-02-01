@@ -26,8 +26,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/" element={<Auth />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/imoveis" element={<ProtectedRoute><Properties /></ProtectedRoute>} />
             <Route path="/imoveis/novo" element={<ProtectedRoute><NewProperty /></ProtectedRoute>} />
             <Route path="/imoveis/:id" element={<ProtectedRoute><PropertyDetails /></ProtectedRoute>} />
