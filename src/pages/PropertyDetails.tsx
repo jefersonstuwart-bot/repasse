@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  Calendar
+  Calendar,
+  Maximize2
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import {
 import { useProperty, useDeleteProperty } from "@/hooks/useProperties";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyEditDialog } from "@/components/properties/PropertyEditDialog";
+import { ImageLightbox } from "@/components/properties/ImageLightbox";
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyStatus } from "@/types";
 
 const statusStyles: Record<PropertyStatus, string> = {
@@ -67,6 +69,7 @@ export default function PropertyDetails() {
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!property) return;
@@ -195,8 +198,18 @@ export default function PropertyDetails() {
                 <img 
                   src={photos[currentPhotoIndex]} 
                   alt={`Foto ${currentPhotoIndex + 1}`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full cursor-pointer object-cover transition-transform hover:scale-[1.02]"
+                  onClick={() => setLightboxOpen(true)}
                 />
+                
+                {/* Fullscreen button */}
+                <button
+                  onClick={() => setLightboxOpen(true)}
+                  className="absolute bottom-4 right-4 rounded-full bg-background/80 p-2 backdrop-blur-sm transition-colors hover:bg-background"
+                  title="Ver em tela cheia"
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </button>
                 
                 {photos.length > 1 && (
                   <>
@@ -427,6 +440,13 @@ export default function PropertyDetails() {
         property={property} 
         open={editDialogOpen} 
         onOpenChange={setEditDialogOpen} 
+      />
+
+      <ImageLightbox
+        images={photos}
+        initialIndex={currentPhotoIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
       />
     </AppLayout>
   );
