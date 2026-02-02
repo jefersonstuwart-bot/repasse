@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Building2, X, Upload, Star } from "lucide-react";
+import { Save, Building2, X, Upload, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,9 +19,24 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Progress } from "@/components/ui/progress";
 import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateProperty } from "@/hooks/useProperties";
+import { usePhotoUpload, UploadedPhoto } from "@/hooks/usePhotoUpload";
+
+interface ExistingPhoto {
+  url: string;
+  isNew: false;
+}
+
+interface NewPhoto {
+  file: File;
+  previewUrl: string;
+  isNew: true;
+}
+
+type PhotoItem = ExistingPhoto | NewPhoto;
 
 interface PropertyEditDialogProps {
   property: {
@@ -49,6 +64,7 @@ interface PropertyEditDialogProps {
 export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEditDialogProps) {
   const { toast } = useToast();
   const updateProperty = useUpdateProperty();
+  const { uploadPhotos, isUploading, uploadProgress } = usePhotoUpload();
   
   const [formData, setFormData] = useState({
     type: "" as PropertyType | "",
@@ -67,7 +83,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
     notes: "",
   });
 
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [coverIndex, setCoverIndex] = useState<number>(0);
 
   useEffect(() => {
@@ -88,7 +104,12 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         status: property.status as PropertyStatus,
         notes: property.notes || "",
       });
-      setPhotos(property.photos || []);
+      // Convert existing URLs to PhotoItem format
+      const existingPhotos: PhotoItem[] = (property.photos || []).map(url => ({
+        url,
+        isNew: false as const,
+      }));
+      setPhotos(existingPhotos);
       setCoverIndex(0);
     }
   }, [property]);
@@ -115,6 +136,37 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         reorderedPhotos.unshift(coverPhoto);
       }
 
+      // Separate new photos and existing URLs
+      const newPhotos = reorderedPhotos.filter((p): p is NewPhoto => p.isNew);
+      const existingUrls = reorderedPhotos.filter((p): p is ExistingPhoto => !p.isNew).map(p => p.url);
+
+      // Upload new photos if any
+      let uploadedUrls: string[] = [];
+      if (newPhotos.length > 0) {
+        toast({
+          title: "Enviando fotos...",
+          description: "Aguarde enquanto as fotos são enviadas.",
+        });
+        const photosToUpload: UploadedPhoto[] = newPhotos.map(p => ({
+          file: p.file,
+          previewUrl: p.previewUrl,
+        }));
+        uploadedUrls = await uploadPhotos(photosToUpload);
+      }
+
+      // Combine existing and new URLs in correct order
+      const finalPhotos: string[] = [];
+      let newPhotoIndex = 0;
+      let existingPhotoIndex = 0;
+      
+      for (const photo of reorderedPhotos) {
+        if (photo.isNew) {
+          finalPhotos.push(uploadedUrls[newPhotoIndex++]);
+        } else {
+          finalPhotos.push(existingUrls[existingPhotoIndex++]);
+        }
+      }
+
       await updateProperty.mutateAsync({
         id: property.id,
         type: formData.type as PropertyType,
@@ -131,7 +183,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
         owner_phone: formData.owner_phone || null,
         status: formData.status,
         notes: formData.notes || null,
-        photos: reorderedPhotos,
+        photos: finalPhotos,
       });
 
       toast({
@@ -152,13 +204,24 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newPhotos = Array.from(files).map((file) => URL.createObjectURL(file));
+      const newPhotos: PhotoItem[] = Array.from(files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isNew: true as const,
+      }));
       setPhotos((prev) => [...prev, ...newPhotos]);
     }
   };
 
   const removePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotos((prev) => {
+      const photo = prev[index];
+      // Revoke blob URL if it's a new photo
+      if (photo.isNew) {
+        URL.revokeObjectURL(photo.previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
     if (index === coverIndex) {
       setCoverIndex(0);
     } else if (index < coverIndex) {
@@ -168,6 +231,13 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
 
   const setCover = (index: number) => {
     setCoverIndex(index);
+  };
+
+  const getPhotoUrl = (photo: PhotoItem): string => {
+    if ('previewUrl' in photo) {
+      return photo.previewUrl;
+    }
+    return photo.url;
   };
 
   return (
@@ -372,6 +442,16 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
                 </p>
               </div>
               
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enviando fotos... {uploadProgress}%
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+              
               <div className="grid grid-cols-4 gap-2">
                 {photos.map((photo, index) => (
                   <div 
@@ -380,7 +460,7 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
                       index === coverIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent"
                     }`}
                   >
-                    <img src={photo} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                    <img src={getPhotoUrl(photo)} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
                     
                     {/* Cover badge */}
                     {index === coverIndex && (
@@ -442,12 +522,26 @@ export function PropertyEditDialog({ property, open, onOpenChange }: PropertyEdi
 
             {/* Submit */}
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
                 Cancelar
               </Button>
-              <Button type="submit" className="gap-2" disabled={updateProperty.isPending}>
-                <Save className="h-4 w-4" />
-                {updateProperty.isPending ? "Salvando..." : "Salvar Alterações"}
+              <Button type="submit" className="gap-2" disabled={updateProperty.isPending || isUploading}>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enviando fotos...
+                  </>
+                ) : updateProperty.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Salvar Alterações
+                  </>
+                )}
               </Button>
             </div>
           </form>
