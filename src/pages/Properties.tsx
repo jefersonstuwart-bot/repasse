@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Building2, MapPin, Banknote, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Building2, MapPin, Banknote, MoreVertical, Eye, Edit, Trash2, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -271,7 +271,15 @@ export default function Properties() {
                       <Banknote className="h-4 w-4" />
                       <span>{property.bank_constructor || "-"}</span>
                     </div>
-                    <span className="text-muted-foreground">{property.owner_name || "-"}</span>
+                    <div className="text-right">
+                      <span className="text-muted-foreground">{property.owner_name || "-"}</span>
+                      {property.owner_phone && (
+                        <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          <span>{property.owner_phone}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
