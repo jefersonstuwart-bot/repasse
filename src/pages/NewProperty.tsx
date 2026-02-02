@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Upload, X, Building2, Star } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, Building2, Star, Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,17 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Progress } from "@/components/ui/progress";
 import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateProperty } from "@/hooks/useProperties";
+import { usePhotoUpload, UploadedPhoto } from "@/hooks/usePhotoUpload";
 
 export default function NewProperty() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const createProperty = useCreateProperty();
+  const { uploadPhotos, isUploading, uploadProgress } = usePhotoUpload();
   
   const [formData, setFormData] = useState({
     type: "" as PropertyType | "",
@@ -41,7 +44,7 @@ export default function NewProperty() {
     notes: "",
   });
 
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [coverIndex, setCoverIndex] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +68,16 @@ export default function NewProperty() {
         reorderedPhotos.unshift(coverPhoto);
       }
 
+      // Upload photos to storage
+      let uploadedUrls: string[] = [];
+      if (reorderedPhotos.length > 0) {
+        toast({
+          title: "Enviando fotos...",
+          description: "Aguarde enquanto as fotos são enviadas.",
+        });
+        uploadedUrls = await uploadPhotos(reorderedPhotos);
+      }
+
       await createProperty.mutateAsync({
         type: formData.type as PropertyType,
         street: formData.street,
@@ -80,7 +93,7 @@ export default function NewProperty() {
         owner_phone: formData.owner_phone || null,
         status: formData.status,
         notes: formData.notes || null,
-        photos: reorderedPhotos,
+        photos: uploadedUrls,
       });
 
       toast({
@@ -101,13 +114,20 @@ export default function NewProperty() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newPhotos = Array.from(files).map((file) => URL.createObjectURL(file));
+      const newPhotos: UploadedPhoto[] = Array.from(files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
       setPhotos((prev) => [...prev, ...newPhotos]);
     }
   };
 
   const removePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotos((prev) => {
+      // Revoke the blob URL to free memory
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
     // Ajusta o índice da capa se necessário
     if (index === coverIndex) {
       setCoverIndex(0);
@@ -331,6 +351,16 @@ export default function NewProperty() {
             Clique na estrela para definir a foto de capa
           </p>
           
+          {isUploading && (
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Enviando fotos... {uploadProgress}%
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          )}
+          
           <div className="grid gap-4 sm:grid-cols-4">
             {photos.map((photo, index) => (
               <div 
@@ -339,7 +369,7 @@ export default function NewProperty() {
                   index === coverIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent"
                 }`}
               >
-                <img src={photo} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                <img src={photo.previewUrl} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
                 
                 {/* Cover badge */}
                 {index === coverIndex && (
@@ -400,12 +430,26 @@ export default function NewProperty() {
 
         {/* Submit */}
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+          <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={isUploading}>
             Cancelar
           </Button>
-          <Button type="submit" className="gap-2" disabled={createProperty.isPending}>
-            <Save className="h-4 w-4" />
-            {createProperty.isPending ? "Salvando..." : "Cadastrar Imóvel"}
+          <Button type="submit" className="gap-2" disabled={createProperty.isPending || isUploading}>
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Enviando fotos...
+              </>
+            ) : createProperty.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Cadastrar Imóvel
+              </>
+            )}
           </Button>
         </div>
       </form>
