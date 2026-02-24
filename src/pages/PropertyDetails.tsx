@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -13,7 +13,9 @@ import {
   ChevronRight,
   FileText,
   Calendar,
-  Maximize2
+  Maximize2,
+  Video,
+  Play
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -137,6 +139,8 @@ export default function PropertyDetails() {
   }
 
   const photos = property.photos || [];
+  const videos = property.videos || [];
+  const hasMedia = photos.length > 0 || videos.length > 0;
 
   return (
     <AppLayout 
@@ -242,6 +246,13 @@ export default function PropertyDetails() {
                   </>
                 )}
               </>
+            ) : videos.length > 0 ? (
+              <video 
+                src={videos[0]} 
+                className="h-full w-full object-cover"
+                controls
+                playsInline
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                 <Building2 className="h-24 w-24 text-primary/30" />
@@ -289,6 +300,28 @@ export default function PropertyDetails() {
                 />
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Videos Section */}
+        {videos.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <Video className="h-5 w-5 text-primary" />
+              Vídeos ({videos.length})
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map((videoUrl, index) => (
+                <div key={index} className="overflow-hidden rounded-xl border bg-muted">
+                  <video 
+                    src={videoUrl} 
+                    className="aspect-video w-full object-cover"
+                    controls
+                    playsInline
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
