@@ -31,15 +31,18 @@ export function parseCurrencyValue(formattedValue: string): number | null {
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ className, value, onChange, ...props }, ref) => {
     const [displayValue, setDisplayValue] = React.useState("");
+    const [isFocused, setIsFocused] = React.useState(false);
 
-    // Sincroniza o displayValue quando o value externo muda
+    // Sincroniza apenas quando NÃO está focado
     React.useEffect(() => {
-      if (value !== null && value !== undefined) {
-        setDisplayValue(formatCurrencyDisplay(value));
-      } else {
-        setDisplayValue("");
+      if (!isFocused) {
+        if (value !== null && value !== undefined) {
+          setDisplayValue(formatCurrencyDisplay(value));
+        } else {
+          setDisplayValue("");
+        }
       }
-    }, [value]);
+    }, [value, isFocused]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let inputValue = e.target.value;
@@ -57,13 +60,21 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       
       setDisplayValue(inputValue);
       
-      // Converte para valor numérico para armazenar
       const numericValue = parseCurrencyValue(inputValue);
       onChange(numericValue);
     };
 
+    const handleFocus = () => {
+      setIsFocused(true);
+      // Ao focar, mostra o valor sem formatação de milhar para facilitar edição
+      if (value !== null && value !== undefined) {
+        const raw = value.toString().replace(".", ",");
+        setDisplayValue(raw);
+      }
+    };
+
     const handleBlur = () => {
-      // Ao sair do campo, formata completamente
+      setIsFocused(false);
       if (value !== null && value !== undefined) {
         setDisplayValue(formatCurrencyDisplay(value));
       }
@@ -82,6 +93,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
           ref={ref}
           value={displayValue}
           onChange={handleChange}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder="0,00"
           {...props}
