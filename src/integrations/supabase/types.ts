@@ -164,6 +164,7 @@ export type Database = {
           type: Database["public"]["Enums"]["property_type"]
           updated_at: string
           user_id: string
+          videos: string[] | null
         }
         Insert: {
           bank_constructor?: string | null
@@ -185,6 +186,7 @@ export type Database = {
           type: Database["public"]["Enums"]["property_type"]
           updated_at?: string
           user_id: string
+          videos?: string[] | null
         }
         Update: {
           bank_constructor?: string | null
@@ -206,6 +208,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["property_type"]
           updated_at?: string
           user_id?: string
+          videos?: string[] | null
         }
         Relationships: []
       }
