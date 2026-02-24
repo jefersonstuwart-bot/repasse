@@ -18,6 +18,7 @@ import {
   Play
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import vendidoStamp from "@/assets/vendido-stamp.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -256,6 +257,15 @@ export default function PropertyDetails() {
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                 <Building2 className="h-24 w-24 text-primary/30" />
+              </div>
+            )}
+            {property.status === 'vendido' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+                <img 
+                  src={vendidoStamp} 
+                  alt="Vendido" 
+                  className="w-3/4 max-w-[400px] object-contain drop-shadow-2xl"
+                />
               </div>
             )}
           </div>

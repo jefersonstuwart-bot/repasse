@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, REGIONS, PropertyStatus } from "@/types";
+import vendidoStamp from "@/assets/vendido-stamp.png";
 import { useProperties, useDeleteProperty } from "@/hooks/useProperties";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyEditDialog } from "@/components/properties/PropertyEditDialog";
@@ -196,6 +197,15 @@ export default function Properties() {
                       {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
                     </Badge>
                   </div>
+                  {property.status === 'vendido' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <img 
+                        src={vendidoStamp} 
+                        alt="Vendido" 
+                        className="w-3/4 max-w-[280px] object-contain drop-shadow-2xl"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
