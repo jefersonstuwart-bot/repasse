@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Upload, X, Building2, Star, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, Building2, Star, Loader2, Video } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +19,13 @@ import { Progress } from "@/components/ui/progress";
 import { PROPERTY_TYPE_LABELS, BANKS_CONSTRUCTORS, PropertyType, PropertyStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateProperty } from "@/hooks/useProperties";
-import { usePhotoUpload, UploadedPhoto } from "@/hooks/usePhotoUpload";
+import { usePhotoUpload, UploadedPhoto, UploadedVideo } from "@/hooks/usePhotoUpload";
 
 export default function NewProperty() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const createProperty = useCreateProperty();
-  const { uploadPhotos, isUploading, uploadProgress } = usePhotoUpload();
+  const { uploadPhotos, uploadVideos, isUploading, uploadProgress } = usePhotoUpload();
   
   const [formData, setFormData] = useState({
     type: "" as PropertyType | "",
@@ -45,6 +45,7 @@ export default function NewProperty() {
   });
 
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [videos, setVideos] = useState<UploadedVideo[]>([]);
   const [coverIndex, setCoverIndex] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +79,16 @@ export default function NewProperty() {
         uploadedUrls = await uploadPhotos(reorderedPhotos);
       }
 
+      // Upload videos to storage
+      let uploadedVideoUrls: string[] = [];
+      if (videos.length > 0) {
+        toast({
+          title: "Enviando vídeos...",
+          description: "Aguarde enquanto os vídeos são enviados.",
+        });
+        uploadedVideoUrls = await uploadVideos(videos);
+      }
+
       await createProperty.mutateAsync({
         type: formData.type as PropertyType,
         street: formData.street,
@@ -94,6 +105,7 @@ export default function NewProperty() {
         status: formData.status,
         notes: formData.notes || null,
         photos: uploadedUrls,
+        videos: uploadedVideoUrls,
       });
 
       toast({
@@ -138,6 +150,24 @@ export default function NewProperty() {
 
   const setCover = (index: number) => {
     setCoverIndex(index);
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newVideos: UploadedVideo[] = Array.from(files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      setVideos((prev) => [...prev, ...newVideos]);
+    }
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   return (
@@ -417,7 +447,57 @@ export default function NewProperty() {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Videos */}
+        <div className="rounded-xl border bg-card p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+            <Video className="h-5 w-5 text-primary" />
+            Vídeos
+          </h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Adicione vídeos do imóvel (MP4, MOV, WebM)
+          </p>
+          
+          <div className="grid gap-4 sm:grid-cols-3">
+            {videos.map((video, index) => (
+              <div 
+                key={index} 
+                className="relative aspect-video overflow-hidden rounded-lg border bg-muted"
+              >
+                <video 
+                  src={video.previewUrl} 
+                  className="h-full w-full object-cover"
+                  muted
+                  playsInline
+                  onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                  onMouseLeave={(e) => {
+                    const el = e.target as HTMLVideoElement;
+                    el.pause();
+                    el.currentTime = 0;
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeVideo(index)}
+                  className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/90"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            
+            <label className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:border-primary hover:bg-primary/5">
+              <Video className="h-6 w-6 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Adicionar vídeo</span>
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={handleVideoUpload}
+              />
+            </label>
+          </div>
+        </div>
         <div className="rounded-xl border bg-card p-6">
           <h2 className="mb-4 text-lg font-semibold">Observações</h2>
           <Textarea

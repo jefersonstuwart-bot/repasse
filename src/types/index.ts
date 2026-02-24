@@ -39,6 +39,7 @@ export interface Property {
   status: PropertyStatus;
   notes: string | null;
   photos: string[];
+  videos: string[];
   user_id: string;
   created_at: string;
   updated_at: string;

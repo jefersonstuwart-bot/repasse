@@ -19,6 +19,7 @@ export interface PropertyFormData {
   status: PropertyStatus;
   notes: string | null;
   photos: string[];
+  videos: string[];
 }
 
 export function useProperties() {

@@ -8,6 +8,12 @@ export interface UploadedPhoto {
   uploadedUrl?: string;
 }
 
+export interface UploadedVideo {
+  file: File;
+  previewUrl: string;
+  uploadedUrl?: string;
+}
+
 export function usePhotoUpload() {
   const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -57,10 +63,38 @@ export function usePhotoUpload() {
     }
   };
 
+  const uploadVideos = async (videos: UploadedVideo[]): Promise<string[]> => {
+    if (!user) throw new Error("User not authenticated");
+    
+    const uploadedUrls: string[] = [];
+    
+    for (let i = 0; i < videos.length; i++) {
+      const video = videos[i];
+      const fileExt = video.file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('property-photos')
+        .upload(fileName, video.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('property-photos')
+        .getPublicUrl(fileName);
+
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
   const deletePhoto = async (photoUrl: string): Promise<void> => {
     if (!user) throw new Error("User not authenticated");
     
-    // Extract file path from URL
     const urlParts = photoUrl.split('/property-photos/');
     if (urlParts.length !== 2) return;
     
@@ -73,6 +107,7 @@ export function usePhotoUpload() {
 
   return {
     uploadPhotos,
+    uploadVideos,
     deletePhoto,
     isUploading,
     uploadProgress,
