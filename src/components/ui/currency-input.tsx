@@ -44,27 +44,15 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let inputValue = e.target.value;
       
-      // Remove caracteres não numéricos exceto vírgula
+      // Remove tudo exceto números e vírgula
       inputValue = inputValue.replace(/[^\d,]/g, "");
       
       // Garante apenas uma vírgula
-      const parts = inputValue.split(",");
-      if (parts.length > 2) {
-        inputValue = parts[0] + "," + parts.slice(1).join("");
-      }
-      
-      // Limita decimais a 2 dígitos
-      if (parts.length === 2 && parts[1].length > 2) {
-        inputValue = parts[0] + "," + parts[1].substring(0, 2);
-      }
-      
-      // Formata com separador de milhares
-      if (inputValue) {
-        const [integerPart, decimalPart] = inputValue.split(",");
-        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        inputValue = decimalPart !== undefined 
-          ? `${formattedInteger},${decimalPart}` 
-          : formattedInteger;
+      const commaIndex = inputValue.indexOf(",");
+      if (commaIndex !== -1) {
+        const before = inputValue.substring(0, commaIndex);
+        const after = inputValue.substring(commaIndex + 1).replace(/,/g, "");
+        inputValue = before + "," + after.substring(0, 2);
       }
       
       setDisplayValue(inputValue);
