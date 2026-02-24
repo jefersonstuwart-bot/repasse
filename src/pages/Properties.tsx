@@ -160,13 +160,26 @@ export default function Properties() {
                 className="group cursor-pointer overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg"
                 onClick={() => navigate(`/imoveis/${property.id}`)}
               >
-                {/* Image */}
+                {/* Image / Video Cover */}
                 <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                   {property.photos && property.photos.length > 0 ? (
                     <img 
                       src={property.photos[0]} 
                       alt={property.street}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : property.videos && property.videos.length > 0 ? (
+                    <video 
+                      src={property.videos[0]} 
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      muted
+                      playsInline
+                      onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                      onMouseLeave={(e) => {
+                        const el = e.target as HTMLVideoElement;
+                        el.pause();
+                        el.currentTime = 0;
+                      }}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
