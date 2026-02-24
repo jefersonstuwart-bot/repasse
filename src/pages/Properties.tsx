@@ -187,22 +187,24 @@ export default function Properties() {
                       <Building2 className="h-12 w-12 text-primary/30" />
                     </div>
                   )}
-                  <div className="absolute left-3 top-3">
-                    <span className={statusStyles[property.status as PropertyStatus]}>
-                      {PROPERTY_STATUS_LABELS[property.status as PropertyStatus]}
-                    </span>
-                  </div>
-                  <div className="absolute right-3 top-3">
+                  {property.status !== 'vendido' && (
+                    <div className="absolute left-3 top-3">
+                      <span className={statusStyles[property.status as PropertyStatus]}>
+                        {PROPERTY_STATUS_LABELS[property.status as PropertyStatus]}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute right-3 top-3 z-20">
                     <Badge variant="secondary" className="bg-card/90 backdrop-blur-sm">
                       {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
                     </Badge>
                   </div>
                   {property.status === 'vendido' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                       <img 
                         src={vendidoStamp} 
                         alt="Vendido" 
-                        className="w-3/4 max-w-[280px] object-contain drop-shadow-2xl"
+                        className="w-[90%] max-w-[320px] object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
                       />
                     </div>
                   )}
